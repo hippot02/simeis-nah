@@ -306,16 +306,28 @@ class Game:
                     print(f"[!] Impossible d'appliquer l'amélioration : {e}")
 
     def check_cargo_upgrade(self):
-        status = game.get("/player/" + str(game.pid))
-        upgradeList = self.get(f"/station/{self.sta}/shipyard/upgrade")
-        ships = status["ships"]
+        status = game.get(f"/player/{game.pid}")
+        upgrade_list = self.get(f"/station/{self.sta}/shipyard/upgrade")
+        ship = status["ships"][0]
+
+        current_capacity = ship['cargo']['capacity']
         money = status['money']
-        price = upgradeList['CargoExpansion']['price']
+        price = upgrade_list['CargoExpansion']['price']
 
-        print(status)
+        operator_rank = next(
+            (member['rank'] for member in ship['crew'].values() if member.get('member_type') == 'operator'),
+            None
+        )
 
-        #if  money >= price * 2:
-        #    self.get(f"/station/{self.sta}/shipyard/upgrade/{self.sid}/CargoExpansion")
+        initial_capacity = 200
+        capacity_per_upgrade = 100
+        upgrade_level = (current_capacity - initial_capacity) // capacity_per_upgrade
+        required_rank = 3 * (upgrade_level + 1)
+
+        if operator_rank is not None and operator_rank >= required_rank and money >= price * 2:
+            self.get(f"/station/{self.sta}/shipyard/upgrade/{self.sid}/CargoExpansion")
+            final_capacity = current_capacity + 100 if upgraded else current_capacity
+            print(f"Operator rank: {operator_rank}, Cargo capacity: {final_capacity}")
 
 if __name__ == "__main__":
     name = sys.argv[1]
@@ -324,9 +336,9 @@ if __name__ == "__main__":
 
     while True:
         print("")
-        game.check_operator_upgrade()
-        #game.check_cargo_upgrade()
         game.disp_status()
         game.go_mine()
         game.disp_status()
         game.go_sell()
+        game.check_operator_upgrade()
+        game.check_cargo_upgrade()
