@@ -289,6 +289,34 @@ class Game:
         self.ship_repair(self.sid)
         self.ship_refuel(self.sid)
 
+    def check_operator_upgrade(self):
+        upgradelist = self.get(f"/station/{self.sta}/crew/upgrade/ship/{self.sid}")
+        status = game.get("/player/" + str(game.pid))
+        for crew_id, crew_info in upgradelist.items():
+            if crew_info['member-type'] == 'Operator' and int(status["money"]) > (int(crew_info['price']) * 2.5):
+                print(f"[*] Amélioration disponible pour l'opérateur:")
+                print(f"\t- ID: {crew_id}")
+                print(f"\t- Prix: {crew_info['price']} crédits")
+                print(f"\t- Rang: {crew_info['rank']}")
+
+                try:
+                    result = self.get(f"/station/{self.sta}/crew/upgrade/ship/{self.sid}/{crew_id}")
+                    print(f"[*] Amélioration appliquée avec succès : {result}")
+                except SimeisError as e:
+                    print(f"[!] Impossible d'appliquer l'amélioration : {e}")
+
+    def check_cargo_upgrade(self):
+        status = game.get("/player/" + str(game.pid))
+        upgradeList = self.get(f"/station/{self.sta}/shipyard/upgrade")
+        ships = status["ships"]
+        money = status['money']
+        price = upgradeList['CargoExpansion']['price']
+
+        print(status)
+
+        #if  money >= price * 2:
+        #    self.get(f"/station/{self.sta}/shipyard/upgrade/{self.sid}/CargoExpansion")
+
 if __name__ == "__main__":
     name = sys.argv[1]
     game = Game(name)
@@ -296,6 +324,8 @@ if __name__ == "__main__":
 
     while True:
         print("")
+        game.check_operator_upgrade()
+        #game.check_cargo_upgrade()
         game.disp_status()
         game.go_mine()
         game.disp_status()
